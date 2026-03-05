@@ -4,9 +4,18 @@ import argparse
 import json
 from pathlib import Path
 
-from dotenv import load_dotenv
-from rich.console import Console
-from rich.table import Table
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:  # pragma: no cover
+    def load_dotenv() -> None:
+        return None
+
+try:
+    from rich.console import Console
+    from rich.table import Table
+except ModuleNotFoundError:  # pragma: no cover
+    Console = None
+    Table = None
 
 from src.analysis import enrich_signals_with_crypto_context, parse_crypto_snapshots, score_markets
 from src.clients import CoinMarketCapClient, PolymarketClient
@@ -23,6 +32,15 @@ def parse_args() -> argparse.Namespace:
 
 
 def render_console_report(enriched: list[dict], top: int) -> None:
+    if Console is None or Table is None:
+        for row in enriched[:top]:
+            market = row["market"]
+            print(f"[{row['signal_score']:.2f}] {row['question']}")
+            print(
+                f"  yes={market['yes_price']} spread={market['spread']} volume={market['volume']:.0f} reasons={'; '.join(row['reasons'])}"
+            )
+        return
+
     console = Console()
     table = Table(title="Top Polymarket + Crypto Alpha Setups")
     table.add_column("Score", justify="right")
@@ -53,27 +71,31 @@ def render_console_report(enriched: list[dict], top: int) -> None:
     console.print(table)
 
 
-def main() -> None:
-    load_dotenv()
-    args = parse_args()
+def build_report(symbols: list[str], market_limit: int, top: int) -> list[dict]:
     settings = Settings.from_env()
-
     poly = PolymarketClient(settings)
     cmc = CoinMarketCapClient(settings)
 
-    markets = poly.list_markets(limit=args.market_limit)
+    markets = poly.list_markets(limit=market_limit)
     scored = score_markets(markets)
 
-    quotes = cmc.latest_quotes(args.symbols)
+    quotes = cmc.latest_quotes(symbols)
     crypto = parse_crypto_snapshots(quotes)
 
     enriched = enrich_signals_with_crypto_context(scored, crypto)
+    return enriched[:top]
 
-    render_console_report(enriched, args.top)
+
+def main() -> None:
+    load_dotenv()
+    args = parse_args()
+    report = build_report(args.symbols, args.market_limit, args.top)
+
+    render_console_report(report, args.top)
 
     if args.output:
         output_path = Path(args.output)
-        output_path.write_text(json.dumps(enriched[: args.top], indent=2), encoding="utf-8")
+        output_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

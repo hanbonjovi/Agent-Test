@@ -10,12 +10,13 @@ This repository now contains a **starter agent** that scans Polymarket for unusu
   - Wide bid/ask spread (possible inefficiency).
   - Mid-price near 50% (uncertain, often information-rich).
   - Large mismatch between market sentiment and recent crypto move.
-- Pulls crypto data from CoinMarketCap (quotes + market pairs).
+- Pulls crypto data from CoinMarketCap.
 - Produces a ranked alpha-style briefing in terminal + JSON output.
+- Includes a tiny local web dashboard for easier preview.
 
-## Quickstart
+## Quickstart (CLI)
 
-1. Create a virtual environment and install dependencies:
+1. Create a virtual environment and install dependencies (optional but recommended):
 
 ```bash
 python -m venv .venv
@@ -30,7 +31,7 @@ cp .env.example .env
 # edit .env with your key
 ```
 
-3. Run the agent:
+3. Run the CLI:
 
 ```bash
 python -m src.main --symbols BTC ETH SOL DOGE --market-limit 150 --top 15
@@ -42,6 +43,20 @@ python -m src.main --symbols BTC ETH SOL DOGE --market-limit 150 --top 15
 python -m src.main --symbols BTC ETH SOL --output report.json
 ```
 
+## Quickstart (Dashboard)
+
+Run the local dashboard server:
+
+```bash
+python -m src.dashboard --host 127.0.0.1 --port 8501
+```
+
+Then open:
+
+- <http://127.0.0.1:8501>
+
+Click **Run Scan** to fetch and display the latest report.
+
 ## Environment variables
 
 - `CMC_API_KEY`: CoinMarketCap API key.
@@ -52,3 +67,4 @@ python -m src.main --symbols BTC ETH SOL --output report.json
 
 - This implementation is **read-only analytics** and does not trade.
 - It is intended as a base scaffold so we can iterate with more sophisticated signal logic (orderbook, cross-exchange basis, event clustering, and alerting).
+- The app has stdlib HTTP fallbacks so it can still run if optional packages (`httpx`, `python-dotenv`, `rich`) are missing.

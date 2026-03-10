@@ -71,6 +71,7 @@ curl "https://<your-worker-subdomain>/scan?top=5&max_markets=80"
 
 ## Worker endpoint behavior
 
+- `GET /` → interactive web UI to run scans and view a table + raw JSON.
 - `GET /health` → simple uptime check.
 - `GET /scan` → fetches active Gamma markets, applies the same heuristic logic as the Python scanner, and returns ranked JSON edges.
 - Query params accepted by `/scan`:
